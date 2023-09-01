@@ -1,0 +1,31 @@
+{
+  "name": "jdataclass",
+  "build": {
+    "dockerfile": "./Dockerfile",
+    "context": "."
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscode-icons-team.vscode-icons",
+        "editorconfig.editorconfig",
+        "eamodio.gitlens",
+        "visualstudioexptteam.vscodeintellicode",
+        "redhat.vscode-yaml",
+        "redhat.vscode-xml",
+        "usernamehw.errorlens",
+        "Equinusocio.vsc-material-theme",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "njpwerner.autodocstring",
+        "ms-python.black-formatter",
+        "ms-vscode.makefile-tools",
+        "ms-python.pylint",
+        "ms-python.flake8",
+        "ms-python.isort",
+        "tamasfe.even-better-toml"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
+}
