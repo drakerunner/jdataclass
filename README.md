@@ -70,18 +70,16 @@ Person(first_name='Jane', last_name='Doe', age=25)
 
 jdataclass provides several functions to work with custom mappings and dataclass objects:
 
-- `JField`: An annotation to specify custom field mappings for a dataclass field.
-- `JFieldOptions`: A class to define options for `JField`.
-- `JProperty`: An annotation to specify custom property mappings for a dataclass property.
-- `jfield`: A decorator for defining custom field mappings using functions.
-- `jfields`: A decorator for defining multiple custom field mappings using functions.
-- `jproperty`: A decorator for defining custom property mappings using functions.
-- `jproperties`: A decorator for defining multiple custom property mappings using functions.
+- `JField`: Holds options for a field, used during serialization and deserialization.
+- `JFieldOptions`: dataclass that is added to a field metadata and is used to create a `JField`.
+- `JProperty`: A descriptor that replaces the getters and setters for a jproperty.
+- `jfield`: Factory function to create a Field with the metadata that JField needs.
+- `jfields`: Function that returns all jfields defined of a given class.
+- `jproperty`: A decorator to specify custom property mappings for a dataclass property.
+- `jproperties`: A function that returns all jproperties of a given class.
 - `create`: Create a dataclass object from a dictionary of data using custom mappings.
 - `asdict`: Serialize a dataclass object to a dictionary using custom mappings.
-- `convert`: Deserialize a dictionary to a dataclass object using custom mappings.
-
-For more detailed information on how to use these functions, refer to the [jdataclass documentation](https://github.com/your-library-docs).
+- `convert`: Converts one dataclass to another.
 
 ## Examples
 
@@ -130,7 +128,7 @@ class PurviewCollection:
 
 ```
 <!--
->>> from examples.purview_collection import PurviewCollection, PurviewResponse
+>>> from examples.purview_collection import PurviewCollection, PurviewResponse, LocalCollection
 
 -->
 
@@ -267,13 +265,51 @@ PurviewCollection(name='000000', friendly_name='Root', collections=[PurviewColle
 
 ```
 
+### Convert
+
+Sometimes we need to convert a dataclass that maps an external api to an internal mapper to save the data in a different format.
+
+Consider the previous example, now we would like to store the contents of a `PurviewCollection` as a different format like the following:
+
+```python
+@dataclass
+class LocalCollection:
+    name: str
+    friendly_name: str = jfield(path="friendlyName")
+    collections: list["LocalCollection"] = jfield(default_factory=list)
+
+    parent: Optional["LocalCollection"] = jfield(
+        parent_ref=True,
+        default=None,
+    )
+
+    @property
+    def parent_name(self) -> Optional[str]:
+        return self.parent and self.parent.name
+```
+
+We can easily convert a `PurviewCollection` to such class by using the `convert` function. It will copy all fields defined in the `LocalCollection` from the given instance of `PurviewCollection`.
+
+```python
+>>> from jdataclass import convert
+
+>>> response = create(PurviewResponse, json_data)  # Deserialize JSON to PurviewResponse
+>>> collection = convert(response.root, LocalCollection)
+>>> collection
+LocalCollection(name='000000', friendly_name='Root', collections=[LocalCollection(name='000001', friendly_name='SubCollection', collections=[], parent=...)], parent=None)
+
+>>> asdict(collection)
+{'name': '000000', 'friendlyName': 'Root', 'collections': [{'name': '000001', 'friendlyName': 'SubCollection', 'collections': []}]}
+
+```
+
 ## Contributions and Issues
 
-If you encounter any issues, have questions, or want to contribute to jdataclass, please visit our [GitHub repository](https://github.com/your-library-repo). We welcome your feedback and contributions.
+If you encounter any issues, have questions, or want to contribute to jdataclass, please visit our [GitHub repository](https://github.com/drakerunner/jdataclass). We welcome your feedback and contributions.
 
 ## License
 
-jdataclass is licensed under the MIT License. See the [LICENSE](https://github.com/your-library-repo/LICENSE) file for more details.
+jdataclass is licensed under the MIT License. See the [LICENSE](https://github.com/drakerunner/jdataclass/LICENSE) file for more details.
 
 ---
 
