@@ -1,4 +1,7 @@
 [run]
+source =
+    jdataclass
+    
 omit =
     __init__.py
     __main__.py

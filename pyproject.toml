@@ -1,9 +1,12 @@
 [tool.poetry]
 name = "jdataclass"
 version = "0.1.0"
-description = ""
-authors = []
+description = "jdataclass is a Python module that extends the functionality of Python's native dataclasses by allowing custom mappings for reading from dataclass objects and writing to other objects during serialization and deserialization. With jdataclass, you can easily control how data is mapped between your dataclass and external data sources like JSON, databases, or other data formats."
+authors = [
+    "Guilherme Vidal"
+]
 readme = "README.md"
+packages = [{ include = "jdataclass" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -20,6 +23,9 @@ pytest-cov = "^4.1.0"
 [tool.black]
 line-length = 80
 target-version = ['py311']
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib --doctest-modules --cov --cov-report html --cov-report term --doctest-glob=\"*.md\""
 
 [build-system]
 requires = ["poetry-core"]
