@@ -297,6 +297,7 @@ def asdict(instance: Any) -> JSON:
     ...
     ...     def __post_asdict__(self, data: JSON):
     ...         data["post_init"] = True
+    ...         return data
     ...
     >>> data = defaultdict()
     >>> instance = User("Guilherme", "Vidal")
@@ -310,7 +311,7 @@ def asdict(instance: Any) -> JSON:
     set_data_values(json, instance, jproperties(instance))
 
     if hasattr(instance, POST_ASDICT_NAME):
-        getattr(instance, POST_ASDICT_NAME)(json)
+        json = getattr(instance, POST_ASDICT_NAME)(json)
 
     return json
 

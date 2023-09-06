@@ -55,9 +55,11 @@ class PurviewCollection(Collection["PurviewCollection"]):
     def collection_reference(self):
         return "CollectionReference"
 
-    def __post_asdict__(self, data: dict[str, Any]):
+    def __post_asdict__(self, data: dict[str, Any]) -> dict[str, Any]:
         if self.parent_name is None:
             del data["parentCollection"]
+
+        return data
 
     def __repr__(self) -> str:
         if self.collections:
