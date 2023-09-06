@@ -65,12 +65,6 @@ class JField:
         return f"JField(name={self.name!r}, path={self.path!r})"
 
 
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod()
-
-
 def jfield(
     *,
     path: str | _MISSING_TYPE = MISSING,
@@ -282,3 +276,9 @@ def _get_jfield_options(_field: Field[Any]):
         return options
 
     return JFieldOptions(_field.name)
+
+
+if __name__ == "__main__":
+    import doctest
+
+    doctest.testmod()
