@@ -403,6 +403,14 @@ def transform_field(
     ... )
     [User(first_name='Guilherme')]
 
+    Transform nested arrays
+    >>> transform_field(
+    ...     field_value=[["Guilherme"]],
+    ...     field_type=User,
+    ...     transformer=transform_fn
+    ... )
+    [[User(first_name='Guilherme')]]
+
     Transform not a dataclass
     >>> transform_field(
     ...     field_value="Guilherme",
@@ -411,12 +419,29 @@ def transform_field(
     ... )
     'Guilherme'
     """
+
+    def recurse_nested_sequences(
+        values: Sequence[T],
+        field_type: type,
+    ) -> Iterable[T | Iterable[T]]:
+        for value in values:
+            if isinstance(value, Sequence) and not isinstance(value, str):
+                nested_values: Sequence[T] = value
+                transformed_values: Any = recurse_nested_sequences(
+                    nested_values,
+                    field_type,
+                )
+
+                yield list(transformed_values)
+            else:
+                yield transformer(value, field_type)
+
     if field_value and field_type and is_dataclass(field_type):
         if isinstance(field_value, Sequence) and not isinstance(
             field_value, str
         ):
             values: Sequence[Any] = field_value
-            return [transformer(j, field_type) for j in values]
+            return list(recurse_nested_sequences(values, field_type))
 
         return transformer(field_value, field_type)
 
