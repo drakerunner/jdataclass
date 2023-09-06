@@ -1,21 +1,10 @@
 from dataclasses import _MISSING_TYPE  # type:ignore
 from dataclasses import MISSING, Field, dataclass, field, fields
-from importlib import import_module
 from inspect import isclass
-from types import UnionType  # type:ignore
-from typing import (
-    Any,
-    Callable,
-    Mapping,
-    Sequence,
-    TypeVar,
-    Union,
-    get_args,
-    get_origin,
-    get_type_hints,
-)
+from typing import Any, Callable, Mapping, TypeVar
 
 from jdataclass.constants import JFIELD_OPTIONS, JFIELDS
+from jdataclass.typing_utils import get_type_hints_with_module_refs
 
 T = TypeVar("T")
 
@@ -205,11 +194,7 @@ def jfields(class_or_instance: T | type[T]) -> tuple[JField, ...]:
 
 
 def _build_jfields(cls: type):
-    localns = locals()
-    if cls.__module__:
-        localns = vars(import_module(cls.__module__))
-
-    type_hints = get_type_hints(cls, localns=localns)
+    type_hints = get_type_hints_with_module_refs(cls)
     for _field in fields(cls):
         options = _get_jfield_options(_field)
 
@@ -219,56 +204,9 @@ def _build_jfields(cls: type):
         yield JField(
             name=_field.name,
             path=options.path,
-            field_type=_get_field_type(type_hints, _field.name),
+            field_type=type_hints.get(_field.name),
             parent_ref=options.parent_ref,
         )
-
-
-def _get_field_type(
-    type_hints: dict[str, Any],
-    field_name: str,
-) -> Any:
-    """
-    >>> from dataclasses import make_dataclass
-
-    >>> cls = make_dataclass('cls', [('prop_1', str)])
-    >>> type_hints = get_type_hints(cls, localns=locals())
-    >>> _get_field_type(type_hints, 'prop_1')
-    <class 'str'>
-
-    >>> cls = make_dataclass('cls', [('prop_1', str | None)])
-    >>> type_hints = get_type_hints(cls, localns=locals())
-    >>> _get_field_type(type_hints, 'prop_1')
-    <class 'str'>
-
-    >>> cls = make_dataclass('cls', [('prop_1', list[int])])
-    >>> type_hints = get_type_hints(cls, localns=locals())
-    >>> _get_field_type(type_hints, 'prop_1')
-    <class 'int'>
-
-    >>> cls = make_dataclass('cls', [('prop_1', list[int | None])])
-    >>> type_hints = get_type_hints(cls, localns=locals())
-    >>> _get_field_type(type_hints, 'prop_1')
-    <class 'int'>
-    """  # noqa: E501 # pylint: disable=line-too-long
-    if field_type := type_hints.get(field_name):
-        return _get_real_type(field_type)
-
-
-def _get_real_type(field_type: Any) -> Any:
-    origin = get_origin(field_type)
-    args: Sequence[type] = get_args(field_type)
-
-    if origin and args:
-        if origin is Union or origin is UnionType:
-            no_optional = [a for a in args if a is not type(None)]  # noqa:E721
-            if len(no_optional) == 1:
-                return no_optional[0]
-        elif issubclass(origin, Sequence):
-            if len(args) == 1:
-                return _get_real_type(args[0])
-
-    return field_type
 
 
 def _get_jfield_options(_field: Field[Any]):
