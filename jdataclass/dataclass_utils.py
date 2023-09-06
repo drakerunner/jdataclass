@@ -136,6 +136,19 @@ def create(
     >>> create(cls=Directory, data=data)
     Directory(name='home', files=[File(name='.bashrc', directory=...), \
 File(name='.profile', directory=...)])
+
+    >>> from jdataclass.jproperty import jproperty
+    ...
+    >>> @dataclass
+    ... class WrongProperty:
+    ...     @jproperty(path="name")
+    ...     def name(self):
+    ...         return "Guilherme"
+    ...
+    >>> create(cls=WrongProperty, data={})
+    Traceback (most recent call last):
+    ...
+    ValueError: JProperty must have a return type: WrongProperty.name
     """
     if init_fn is None:
         init_fn = init
@@ -304,6 +317,17 @@ def asdict(instance: Any) -> JSON:
     >>> asdict(instance)
     {'first_name': 'Guilherme', 'last_name': 'Vidal', \
 'full_name': 'Guilherme Vidal', 'post_init': True}
+
+    >>> @dataclass
+    ... class WrongProperty:
+    ...     @jproperty(path="name")
+    ...     def name(self):
+    ...         return "Guilherme"
+    ...
+    >>> create(cls=WrongProperty, data={})
+    Traceback (most recent call last):
+    ...
+    ValueError: JProperty must have a return type: WrongProperty.name
     """
     json: JSON = defaultdict()
 
