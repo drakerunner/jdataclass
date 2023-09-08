@@ -7,13 +7,19 @@ on:
       - master
       - develop
 
-permissions:
-  contents: read
+env:
+    PIP_DISABLE_PIP_VERSION_CHECK: 1
+    PIP_NO_PYTHON_VERSION_WARNING: 1
 
 jobs:
-  deploy:
+  build:
 
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v3
