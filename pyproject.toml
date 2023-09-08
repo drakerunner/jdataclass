@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jdataclass"
-version = "0.1.0"
+version = "0.1.1"
 description = "jdataclass is a Python module that extends the functionality of Python's native dataclasses by allowing custom mappings for reading from dataclass objects and writing to other objects during serialization and deserialization. With jdataclass, you can easily control how data is mapped between your dataclass and external data sources like JSON, databases, or other data formats."
 authors = ["Guilherme Vidal <guilherme.pereira.vidal@gmail.com>"]
 readme = "README.md"
