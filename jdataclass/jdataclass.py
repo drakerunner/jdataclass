@@ -26,12 +26,12 @@ Typical usage:
 # pylint: disable=too-many-lines
 # pylint: disable=too-few-public-methods
 
+import sys
 from collections import ChainMap, UserDict
 from dataclasses import _MISSING_TYPE  # type:ignore
 from dataclasses import MISSING, Field, dataclass, field, fields, is_dataclass
 from importlib import import_module
 from inspect import isclass
-from types import UnionType  # type: ignore
 from typing import (
     Any,
     Callable,
@@ -39,7 +39,6 @@ from typing import (
     Iterable,
     Mapping,
     Optional,
-    ParamSpec,
     Sequence,
     SupportsIndex,
     TypeVar,
@@ -50,6 +49,12 @@ from typing import (
     get_type_hints,
     overload,
 )
+
+if sys.version_info < (3, 10):
+    from typing_extensions import ParamSpec
+else:
+    from types import UnionType
+    from typing import ParamSpec
 
 # constants:
 _JFIELD_OPTIONS = "___JFIELD__options"
@@ -70,20 +75,22 @@ _Transformed = TypeVar("_Transformed")
 
 # types:
 JSON = Mapping[str, "_JSON_DATA_TYPES"]
-_JSON_DATA_TYPES = (
-    str
-    | int
-    | float
-    | complex
-    | bool
-    | None
-    | Sequence["_JSON_DATA_TYPES"]
-    | Mapping[str, "_JSON_DATA_TYPES"]
-)
-_RECURSIVE_ARRAY = _Transformed | list["_RECURSIVE_ARRAY"]
+# pylint: disable-next=invalid-name
+_JSON_DATA_TYPES = Union[
+    str,
+    int,
+    float,
+    complex,
+    bool,
+    None,
+    Sequence["_JSON_DATA_TYPES"],
+    Mapping[str, "_JSON_DATA_TYPES"],
+]
+# pylint: disable-next=invalid-name
+_RECURSIVE_ARRAY = Union[_Transformed, list["_RECURSIVE_ARRAY"]]
 
 # pylint: disable-next=invalid-name
-_JPROPERTY_INITIALIZER = Callable[..., JSON | Sequence[JSON]]
+_JPROPERTY_INITIALIZER = Callable[..., Union[JSON, Sequence[JSON]]]
 
 # pylint: disable-next=invalid-name
 _JPATH_TOKEN = tuple[str, Optional[_JPROPERTY_INITIALIZER]]
@@ -110,8 +117,8 @@ class JField:
     def __init__(
         self,
         name: str,
-        path: str | None = None,
-        field_type: type | None = None,
+        path: Optional[str] = None,
+        field_type: Optional[type] = None,
         parent_ref: bool = False,
     ):
         self.name = name
@@ -136,16 +143,16 @@ class JField:
 
 def jfield(
     *,
-    path: str | _MISSING_TYPE = MISSING,
-    parent_ref: bool | _MISSING_TYPE = MISSING,
-    default: T | _MISSING_TYPE = MISSING,
-    default_factory: Callable[[], T] | _MISSING_TYPE = MISSING,
+    path: Union[str, _MISSING_TYPE] = MISSING,
+    parent_ref: Union[bool, _MISSING_TYPE] = MISSING,
+    default: Union[T, _MISSING_TYPE] = MISSING,
+    default_factory: Union[Callable[[], T], _MISSING_TYPE] = MISSING,
     init: bool = True,  # pylint:disable=w0621
     repr: bool = True,  # pylint:disable=redefined-builtin
-    hash: bool | None = None,  # pylint:disable=redefined-builtin
+    hash: Optional[bool] = None,  # pylint:disable=redefined-builtin
     compare: bool = True,
-    metadata: Mapping[Any, Any] | None = None,
-    kw_only: bool | _MISSING_TYPE = MISSING,
+    metadata: Optional[Mapping[Any, Any]] = None,
+    kw_only: Union[bool, _MISSING_TYPE] = MISSING,
 ) -> T:
     """Wrapper on top of field function add jfield options to metadata
 
@@ -173,22 +180,22 @@ def jfield(
 
     metadata |= {_JFIELD_OPTIONS: options}
 
-    return cast(
-        T,
-        field(
-            default=default,
-            default_factory=default_factory,  # type:ignore
-            init=init,
-            repr=repr,
-            hash=hash,
-            compare=compare,
-            metadata=metadata,
-            kw_only=kw_only,
-        ),
-    )
+    kw_args: Any = {
+        "default": default,
+        "default_factory": default_factory,  # type:ignore
+        "init": init,
+        "repr": repr,
+        "hash": hash,
+        "compare": compare,
+        "metadata": metadata,
+    }
+    if sys.version_info >= (3, 10):
+        kw_args["kw_only"] = kw_only
+
+    return cast(T, field(**kw_args))
 
 
-def jfields(class_or_instance: T | type[T]) -> tuple[JField, ...]:
+def jfields(class_or_instance: Union[T, type[T]]) -> tuple[JField, ...]:
     """Return a tuple describing the jfields of this dataclass
 
     Args:
@@ -206,7 +213,7 @@ def jfields(class_or_instance: T | type[T]) -> tuple[JField, ...]:
         ... class MyClass:
         ...     prop_1: str
         ...     prop_2: list[str]
-        ...     prop_3: str | None
+        ...     prop_3: Optional[str]
         ...
         >>> @dataclass
         ... class Child:
@@ -276,8 +283,8 @@ class JProperty(Generic[T], property):
     def __init__(
         self,
         fget: Callable[P, T],
-        fset: Callable[[Any, T], None] | None,
-        path: str | None,
+        fset: Union[Callable[[Any, T], None], None],
+        path: Union[str, None],
     ) -> None:
         super().__init__(fget=cast(Any, fget), fset=fset)
         self.owner: Any = None
@@ -330,18 +337,18 @@ def jproperty(fget: Callable[P, T]) -> JProperty[T]:  # pragma: no cover
 @overload
 def jproperty(
     *,
-    fset: Callable[[Any, T], None] | None = None,
-    path: str | None = None,
+    fset: Optional[Callable[[Any, T], None]] = None,
+    path: Optional[str] = None,
 ) -> Callable[[Callable[P, T]], JProperty[T]]:  # pragma: no cover
     ...
 
 
 def jproperty(
-    fget: Callable[P, T] | None = None,
+    fget: Optional[Callable[P, T]] = None,
     *,
-    fset: Callable[[Any, T], None] | None = None,
-    path: str | None = None,
-) -> JProperty[T] | Callable[[Callable[P, T]], JProperty[T]]:
+    fset: Optional[Callable[[Any, T], None]] = None,
+    path: Optional[str] = None,
+) -> Union[JProperty[T], Callable[[Callable[P, T]], JProperty[T]]]:
     """Decorator that creates a property bound to a jfield."""
 
     def wrap(fget: Callable[P, T]) -> JProperty[T]:
@@ -353,7 +360,7 @@ def jproperty(
     return wrap(fget)
 
 
-def jproperties(class_or_instance: T | type[T]) -> tuple[JField, ...]:
+def jproperties(class_or_instance: Union[T, type[T]]) -> tuple[JField, ...]:
     """Return a tuple describing the jproperties of this dataclass
 
     Args:
@@ -399,7 +406,7 @@ def jproperties(class_or_instance: T | type[T]) -> tuple[JField, ...]:
         if isclass(class_or_instance)
         else type(class_or_instance)
     )
-    _jproperties: tuple[_Lazy[JField]] | None
+    _jproperties: Optional[tuple[_Lazy[JField]]]
     if _jproperties := getattr(cls, _JPROPERTIES, None):
         return tuple(j.value() for j in _jproperties)
 
@@ -409,7 +416,7 @@ def jproperties(class_or_instance: T | type[T]) -> tuple[JField, ...]:
 class _Lazy(Generic[_Value]):
     def __init__(self, factory: Callable[[], _Value]):
         self.factory = factory
-        self._value: _Value | None = None
+        self._value: Optional[_Value] = None
 
     def value(self) -> _Value:
         """Return initialized value."""
@@ -580,7 +587,7 @@ def _init(
         >>> @dataclass
         ... class User:
         ...     first_name: str
-        ...     _last_name: str | None = field(init=False, default=None)
+        ...     _last_name: Optional[str] = field(init=False, default=None)
         ...
         ...     @jproperty
         ...     def last_name(self) -> str:
@@ -772,7 +779,7 @@ def _set_data_values(
 
 def _transform_field(
     *,
-    field_value: _Field | _Transformed,
+    field_value: Union[_Field, _Transformed],
     field_type: Optional[type[_Transformed]],
     transformer: Callable[[_Field, type], _Transformed],
 ) -> _RECURSIVE_ARRAY[_Transformed]:
@@ -994,7 +1001,7 @@ def _tokenize_path(path: str) -> Iterable[_JPATH_TOKEN]:
         >>> tuple(_nomalize_initializers_class_names(tokens))
         (('addresses', '_defaultlist'), ('0', '_defaultdict'), ('address_1', None))
     """  # noqa: E501 # pylint: disable=line-too-long
-    previous: str | None = None
+    previous: Optional[str] = None
     for token in path.split("."):
         if previous is None:
             previous = token
@@ -1168,11 +1175,16 @@ def _get_type_hints_with_module_refs(obj: Any) -> "_TypeHints":
         get_type_hints(
             obj,
             localns=localns,
-        )
+        ),
+        localns,
     )
 
 
 class _TypeHints(UserDict[str, type]):
+    def __init__(self, data: dict[str, type], localns: dict[str, type]):
+        super().__init__(data)
+        self.localns = localns
+
     def __getitem__(self, key: str) -> type:
         return self._get_real_type(super().__getitem__(key))
 
@@ -1181,7 +1193,7 @@ class _TypeHints(UserDict[str, type]):
         args: Sequence[type] = get_args(field_type)
 
         if origin and args:
-            if origin is Union or origin is UnionType:
+            if _is_union_type(origin):
                 no_optional = [
                     a for a in args if a is not type(None)  # noqa:E721
                 ]
@@ -1191,7 +1203,17 @@ class _TypeHints(UserDict[str, type]):
                 if len(args) == 1:
                     return self._get_real_type(args[0])
 
+        if isinstance(field_type, str):
+            return self.localns.get(field_type, field_type)
+
         return field_type
+
+
+def _is_union_type(origin: Any):
+    if sys.version_info < (3, 10):
+        return origin is Union
+
+    return origin is Union or origin is UnionType
 
 
 if __name__ == "__main__":
