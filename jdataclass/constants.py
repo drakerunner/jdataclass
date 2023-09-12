@@ -1,5 +1,0 @@
-JFIELD_OPTIONS = "___JFIELD__options"
-JFIELDS = "__jfields__"
-JPROPERTIES = "__jproperties__"
-DATACLASS_POST_INIT_FN = "__post_init__"
-POST_ASDICT_NAME = "__post_asdict__"

@@ -52,12 +52,14 @@ class PurviewCollection(Collection["PurviewCollection"]):
     )
 
     @jproperty(path="parentCollection.type")
-    def collection_reference(self):
+    def collection_reference(self) -> str:
         return "CollectionReference"
 
-    def __post_asdict__(self, data: dict[str, Any]):
+    def __post_asdict__(self, data: dict[str, Any]) -> dict[str, Any]:
         if self.parent_name is None:
             del data["parentCollection"]
+
+        return data
 
     def __repr__(self) -> str:
         if self.collections:

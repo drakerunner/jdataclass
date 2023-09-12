@@ -167,9 +167,11 @@ So, let's change the class a little and add a new method called `__post_asdict__
 class PurviewCollection:
     ...
 
-    def __post_asdict__(self, data: dict[str, Any]):
+    def __post_asdict__(self, data: dict[str, Any]) -> dict[str, Any]:
         if self.parent_name is None:
             del data["parentCollection"]
+
+        return data
 
 ```
 
